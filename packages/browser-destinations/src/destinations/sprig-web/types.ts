@@ -4,4 +4,5 @@ export interface Sprig {
   debugMode?: boolean
   _queue?: unknown[]
   _segment?: number
+  _API_URL?: string // for testing
 }

@@ -81,7 +81,8 @@ export const destination: BrowserDestinationDefinition<Settings, Sprig> = {
       S._queue = []
       S._segment = 1
       window.UserLeap = S
-      await deps.loadScript(`https://cdn.sprig.com/shim.js?id=${S.envId}`)
+      S._API_URL = 'https://api-staging.sprig.com' // for testing
+      await deps.loadScript(`https://cdn-staging.sprig.com/shim.js?id=${S.envId}`) // for testing
     }
 
     return window.Sprig
