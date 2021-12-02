@@ -19,4 +19,5 @@ beforeEach(() => {
   global.document.domain = 'segment.com'
 
   global.crypto = new Crypto()
+  jest.setTimeout(15000) // in milliseconds
 })

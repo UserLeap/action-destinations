@@ -22,11 +22,11 @@ const subscriptions: Subscription[] = [
 describe('trackEvent', () => {
   test('it maps event parameters correctly to track function ', async () => {
     const [trackEvent] = await sprigWebDestination({
-      envId: 'testEnvId',
+      envId: 'RpOLQFy3T',
       subscriptions
     })
 
-    destination.actions.trackEvent.perform = jest.fn()
+    // destination.actions.trackEvent.perform = jest.fn()
     jest.spyOn(destination.actions.trackEvent, 'perform')
     await trackEvent.load(Context.system(), {} as Analytics)
 
@@ -37,6 +37,10 @@ describe('trackEvent', () => {
         anonymousId: 'anonymous-id-0'
       })
     )
+
+    await new Promise((r) => setTimeout(r, 3000))
+
+    console.log(window.Sprig.partnerAnonymousId)
 
     expect(destination.actions.trackEvent.perform).toHaveBeenCalledWith(
       expect.anything(),
