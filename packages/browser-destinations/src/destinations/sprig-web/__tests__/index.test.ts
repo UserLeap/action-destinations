@@ -31,7 +31,7 @@ describe('Sprig initialization', () => {
     const scripts = window.document.querySelectorAll('script')
     expect(scripts).toMatchSnapshot(`
       <script
-          src="https://cdn.sprig.com/shim.js?id=testEnvId"
+          src="https://cdn-staging.sprig.com/shim.js?id=testEnvId"
           status="loaded"
           type="text/javascript"
         />,
