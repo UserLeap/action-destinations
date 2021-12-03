@@ -1,5 +1,5 @@
 import { Analytics, Context } from '@segment/analytics-next'
-import sprigWebDestination from '../index'
+import sprigWebDestination, { destination } from '../index'
 import { Subscription } from '../../../lib/browser-destinations'
 
 const subscriptions: Subscription[] = [
@@ -95,4 +95,36 @@ describe('e2e test', () => {
     expect(window.Sprig.userId).toEqual(userId0)
     expect(window.Sprig.visitorId).toEqual(visitorId)
   })
+})
+
+describe('trackEvent', () => {
+  test('it maps event parameters correctly to track function ', async () => {
+    const [trackEvent] = await sprigWebDestination({
+      envId: 'RpOLQFy3T',
+      subscriptions: [subscriptions[2]]
+    })
+
+    // destination.actions.trackEvent.perform = jest.fn()
+    jest.spyOn(destination.actions.trackEvent, 'perform')
+    await trackEvent.load(Context.system(), {} as Analytics)
+
+    await trackEvent.track?.(
+      new Context({
+        type: 'track',
+        name: 'Button Clicked 4',
+        anonymousId: 'anonymous-id-2'
+      })
+    )
+
+    await new Promise((r) => setTimeout(r, 5000))
+
+    console.log(window.Sprig.partnerAnonymousId)
+
+    expect(destination.actions.trackEvent.perform).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        payload: { name: 'Button Clicked 2', anonymousId: 'anonymous-id-1' }
+      })
+    )
+  }, 15000)
 })
