@@ -40,8 +40,6 @@ describe('trackEvent', () => {
 
     await new Promise((r) => setTimeout(r, 3000))
 
-    console.log(window.Sprig.partnerAnonymousId)
-
     expect(destination.actions.trackEvent.perform).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
