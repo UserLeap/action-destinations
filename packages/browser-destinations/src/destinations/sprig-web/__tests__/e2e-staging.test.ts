@@ -4,20 +4,6 @@ import { Subscription } from '../../../lib/browser-destinations'
 
 const subscriptions: Subscription[] = [
   {
-    partnerAction: 'aliasUser',
-    name: 'Alias User',
-    enabled: true,
-    subscribe: 'type = "alias"',
-    mapping: {
-      anonymousId: {
-        '@path': '$.anonymousId'
-      },
-      userId: {
-        '@path': '$.userId'
-      }
-    }
-  },
-  {
     partnerAction: 'identifyUser',
     name: 'Identify User',
     enabled: true,
@@ -35,16 +21,37 @@ const subscriptions: Subscription[] = [
     }
   },
   {
+    partnerAction: 'signoutUser',
+    name: 'Sign Out User',
+    enabled: true,
+    subscribe: 'type = "track" and event = "Signed Out"',
+    mapping: {}
+  },
+  {
     partnerAction: 'trackEvent',
     name: 'Track Event',
     enabled: true,
-    subscribe: 'type = "track"',
+    subscribe: 'type = "track" and event != "Signed Out"',
     mapping: {
       name: {
         '@path': '$.name'
       },
       anonymousId: {
         '@path': '$.anonymousId'
+      }
+    }
+  },
+  {
+    partnerAction: 'updateUserId',
+    name: 'Update User ID',
+    enabled: true,
+    subscribe: 'type = "alias"',
+    mapping: {
+      anonymousId: {
+        '@path': '$.anonymousId'
+      },
+      userId: {
+        '@path': '$.userId'
       }
     }
   }
@@ -55,10 +62,27 @@ describe('e2e test', () => {
     const anonymousId = `anonymous-id-${Math.floor(Math.random() * 1000000000)}`
     const userId0 = `user-id-0-${Math.floor(Math.random() * 1000000000)}`
     // const userId1 = `user-id-1-${Math.floor(Math.random() * 1000000000)}`
-    const [_, identifyUser, trackEvent] = await sprigWebDestination({
+    const x = await sprigWebDestination({
       envId: 'RpOLQFy3T', // Staging iOS Test Account
       subscriptions
     })
+
+    // await new Promise((r) => setTimeout(r, 3000))
+    // console.log('initial load', window.Sprig.visitorId)
+
+    // console.log(x)
+    const [identifyUser, signoutUser, trackEvent, _updateUserId] = x
+
+    await signoutUser.load(Context.system(), {} as Analytics)
+    await signoutUser.track?.(
+      new Context({
+        type: 'track',
+        name: 'Signed Out'
+      })
+    )
+
+    await new Promise((r) => setTimeout(r, 3000))
+    console.log('after signout', window.Sprig.visitorId)
 
     await trackEvent.load(Context.system(), {} as Analytics)
     await new Promise((r) => setTimeout(r, 1000))
@@ -73,11 +97,10 @@ describe('e2e test', () => {
         anonymousId
       })
     )
+    // new anonymous ID updates visitor id
 
     await new Promise((r) => setTimeout(r, 3000))
-    console.log(window.Sprig)
-    expect(window.Sprig.partnerAnonymousId).toEqual(anonymousId)
-    expect(window.Sprig.visitorId).toEqual(visitorId)
+    console.log(window.Sprig.visitorId)
 
     await identifyUser.identify?.(
       new Context({
@@ -85,16 +108,16 @@ describe('e2e test', () => {
         anonymousId,
         userId: userId0,
         traits: {
-          email: 'test-email-0@gmail.com'
+          email: 'test-email-1@gmail.com'
         }
       })
     )
 
-    await new Promise((r) => setTimeout(r, 1000))
+    await new Promise((r) => setTimeout(r, 3000))
 
+    console.log(window.Sprig.visitorId, window.Sprig.userId)
     expect(window.Sprig.userId).toEqual(userId0)
-    expect(window.Sprig.visitorId).toEqual(visitorId)
-  })
+  }, 30000)
 })
 
 describe('trackEvent', () => {
@@ -119,11 +142,13 @@ describe('trackEvent', () => {
     await new Promise((r) => setTimeout(r, 5000))
 
     console.log(window.Sprig.partnerAnonymousId)
+    console.log(window.Sprig.visitorId)
+    console.log(window.Sprig)
 
     expect(destination.actions.trackEvent.perform).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        payload: { name: 'Button Clicked 2', anonymousId: 'anonymous-id-1' }
+        payload: { name: 'Button Clicked 4', anonymousId: 'anonymous-id-2' }
       })
     )
   }, 15000)
