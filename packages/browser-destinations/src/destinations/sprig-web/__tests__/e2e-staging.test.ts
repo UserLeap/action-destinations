@@ -70,7 +70,7 @@ describe('e2e test', () => {
     // await new Promise((r) => setTimeout(r, 3000))
     // console.log('initial load', window.Sprig.visitorId)
 
-    // console.log(x)
+    console.log(x)
     const [identifyUser, signoutUser, trackEvent, _updateUserId] = x
 
     await signoutUser.load(Context.system(), {} as Analytics)
@@ -82,7 +82,19 @@ describe('e2e test', () => {
     )
 
     await new Promise((r) => setTimeout(r, 3000))
-    console.log('after signout', window.Sprig.visitorId)
+    console.log('after signout 1', window.Sprig.visitorId)
+    console.log('after signout 1', window.Sprig.logs)
+
+    await signoutUser.track?.(
+      new Context({
+        type: 'track',
+        name: 'Signed Out'
+      })
+    )
+
+    await new Promise((r) => setTimeout(r, 3000))
+    console.log('after signout 2', window.Sprig.visitorId)
+    console.log('after signout 2', window.Sprig.logs)
 
     await trackEvent.load(Context.system(), {} as Analytics)
     await new Promise((r) => setTimeout(r, 1000))
@@ -101,6 +113,7 @@ describe('e2e test', () => {
 
     await new Promise((r) => setTimeout(r, 3000))
     console.log(window.Sprig.visitorId)
+    console.log('after track', window.Sprig.logs)
 
     await identifyUser.identify?.(
       new Context({

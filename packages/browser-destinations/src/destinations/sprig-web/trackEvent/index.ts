@@ -29,6 +29,7 @@ const action: BrowserActionDefinition<Settings, Sprig, Payload> = {
     }
   },
   perform: (Sprig, event) => {
+    console.log('starting track perform')
     const payload = event.payload
     if (!payload) return
 
