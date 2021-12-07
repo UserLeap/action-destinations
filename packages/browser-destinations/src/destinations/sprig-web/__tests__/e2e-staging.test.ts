@@ -77,7 +77,7 @@ describe('e2e test', () => {
     await signoutUser.track?.(
       new Context({
         type: 'track',
-        name: 'Signed Out'
+        event: 'Signed Out'
       })
     )
 
@@ -88,7 +88,7 @@ describe('e2e test', () => {
     await signoutUser.track?.(
       new Context({
         type: 'track',
-        name: 'Signed Out'
+        event: 'Signed Out'
       })
     )
 
@@ -105,7 +105,8 @@ describe('e2e test', () => {
     await trackEvent.track?.(
       new Context({
         type: 'track',
-        name: 'Button Clicked Anonymously',
+        name: 'Button Clicked Event',
+        event: 'Button Clicked Event',
         anonymousId
       })
     )
