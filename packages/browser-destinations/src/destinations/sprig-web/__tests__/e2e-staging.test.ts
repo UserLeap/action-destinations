@@ -1,5 +1,5 @@
 import { Analytics, Context } from '@segment/analytics-next'
-import sprigWebDestination, { destination } from '../index'
+import sprigWebDestination from '../index'
 import { Subscription } from '../../../lib/browser-destinations'
 
 const subscriptions: Subscription[] = [
@@ -58,20 +58,14 @@ const subscriptions: Subscription[] = [
 ]
 
 describe('e2e test', () => {
-  test('it correctly sets attributes, anonymous id, user id, and tracks event', async () => {
+  test('it sets attributes', async () => {
     const anonymousId = `anonymous-id-${Math.floor(Math.random() * 1000000000)}`
-    const userId0 = `user-id-0-${Math.floor(Math.random() * 1000000000)}`
-    // const userId1 = `user-id-1-${Math.floor(Math.random() * 1000000000)}`
-    const x = await sprigWebDestination({
+    const userId = `user-id-${Math.floor(Math.random() * 1000000000)}`
+    const email = `email-${Math.floor(Math.random() * 1000000000)}@fakeemail.com`
+    const [identifyUser, signoutUser, _trackEvent, _updateUserId] = await sprigWebDestination({
       envId: 'RpOLQFy3T', // Staging iOS Test Account
       subscriptions
     })
-
-    // await new Promise((r) => setTimeout(r, 3000))
-    // console.log('initial load', window.Sprig.visitorId)
-
-    console.log(x)
-    const [identifyUser, signoutUser, trackEvent, _updateUserId] = x
 
     await signoutUser.load(Context.system(), {} as Analytics)
     await signoutUser.track?.(
@@ -81,10 +75,51 @@ describe('e2e test', () => {
       })
     )
 
-    await new Promise((r) => setTimeout(r, 3000))
-    console.log('after signout 1', window.Sprig.visitorId)
-    console.log('after signout 1', window.Sprig.logs)
+    await identifyUser.identify?.(
+      new Context({
+        type: 'identify',
+        anonymousId,
+        traits: {
+          email,
+          state: 'California'
+        }
+      })
+    )
 
+    await new Promise((r) => setTimeout(r, 3000))
+
+    const initialVisitorId = window.Sprig.visitorId
+    expect(window.Sprig.partnerAnonymousId).toEqual(anonymousId)
+    expect(window.Sprig.userId).toBeNull()
+
+    await identifyUser.identify?.(
+      new Context({
+        type: 'identify',
+        anonymousId,
+        userId,
+        traits: {
+          product: 'premium'
+        }
+      })
+    )
+
+    await new Promise((r) => setTimeout(r, 3000))
+
+    expect(window.Sprig.visitorId).toEqual(initialVisitorId)
+    expect(window.Sprig.partnerAnonymousId).toEqual(anonymousId)
+    expect(window.Sprig.userId).toEqual(userId)
+  }, 30000)
+
+  test('it updates userId without changing visitorId', async () => {
+    const anonymousId = `anonymous-id-${Math.floor(Math.random() * 1000000000)}`
+    const userId0 = `user-id-0-${Math.floor(Math.random() * 1000000000)}`
+    const userId1 = `user-id-1-${Math.floor(Math.random() * 1000000000)}`
+    const [identifyUser, signoutUser, _trackEvent, updateUserId] = await sprigWebDestination({
+      envId: 'RpOLQFy3T', // Staging iOS Test Account
+      subscriptions
+    })
+
+    await signoutUser.load(Context.system(), {} as Analytics)
     await signoutUser.track?.(
       new Context({
         type: 'track',
@@ -92,15 +127,60 @@ describe('e2e test', () => {
       })
     )
 
+    await identifyUser.identify?.(
+      new Context({
+        type: 'identify',
+        anonymousId,
+        userId: userId0
+      })
+    )
+
     await new Promise((r) => setTimeout(r, 3000))
-    console.log('after signout 2', window.Sprig.visitorId)
-    console.log('after signout 2', window.Sprig.logs)
 
-    await trackEvent.load(Context.system(), {} as Analytics)
-    await new Promise((r) => setTimeout(r, 1000))
+    const initialVisitorId = window.Sprig.visitorId
+    expect(window.Sprig.userId).toEqual(userId0)
 
-    const visitorId = window.Sprig.visitorId
-    expect(visitorId).toBeTruthy()
+    await updateUserId.alias?.(
+      new Context({
+        type: 'alias',
+        userId: userId1
+      })
+    )
+
+    await new Promise((r) => setTimeout(r, 3000))
+
+    expect(window.Sprig.visitorId).toEqual(initialVisitorId)
+    expect(window.Sprig.userId).toEqual(userId1)
+  }, 30000)
+
+  test('it handles user sign out and tracks event', async () => {
+    const anonymousId = `anonymous-id-${Math.floor(Math.random() * 1000000000)}`
+    const userId = `user-id-${Math.floor(Math.random() * 1000000000)}`
+    const [identifyUser, signoutUser, trackEvent, _updateUserId] = await sprigWebDestination({
+      envId: 'RpOLQFy3T', // Staging iOS Test Account
+      subscriptions
+    })
+
+    await identifyUser.load(Context.system(), {} as Analytics)
+    await identifyUser.identify?.(
+      new Context({
+        type: 'identify',
+        anonymousId,
+        userId
+      })
+    )
+
+    await new Promise((r) => setTimeout(r, 3000))
+    const initialVisitorId = window.Sprig.visitorId
+    expect(window.Sprig.partnerAnonymousId).toEqual(anonymousId)
+    expect(window.Sprig.userId).toEqual(userId)
+
+    await signoutUser.track?.(
+      new Context({
+        type: 'track',
+        event: 'Signed Out'
+      })
+    )
 
     await trackEvent.track?.(
       new Context({
@@ -110,60 +190,85 @@ describe('e2e test', () => {
         anonymousId
       })
     )
-    // new anonymous ID updates visitor id
 
     await new Promise((r) => setTimeout(r, 3000))
-    console.log(window.Sprig.visitorId)
-    console.log('after track', window.Sprig.logs)
-
-    await identifyUser.identify?.(
-      new Context({
-        type: 'identify',
-        anonymousId,
-        userId: userId0,
-        traits: {
-          email: 'test-email-1@gmail.com'
-        }
-      })
-    )
-
-    await new Promise((r) => setTimeout(r, 3000))
-
-    console.log(window.Sprig.visitorId, window.Sprig.userId)
-    expect(window.Sprig.userId).toEqual(userId0)
+    expect(window.Sprig.visitorId).not.toEqual(initialVisitorId)
+    expect(window.Sprig.userId).toBeNull()
   }, 30000)
-})
 
-describe('trackEvent', () => {
-  test('it maps event parameters correctly to track function ', async () => {
-    const [trackEvent] = await sprigWebDestination({
-      envId: 'RpOLQFy3T',
-      subscriptions: [subscriptions[2]]
-    })
+  // test('it correctly sets attributes, anonymous id, user id, and tracks event', async () => {
+  //   const anonymousId = `anonymous-id-${Math.floor(Math.random() * 1000000000)}`
+  //   const userId0 = `user-id-0-${Math.floor(Math.random() * 1000000000)}`
+  //   // const userId1 = `user-id-1-${Math.floor(Math.random() * 1000000000)}`
+  //   const x = await sprigWebDestination({
+  //     envId: 'RpOLQFy3T', // Staging iOS Test Account
+  //     subscriptions
+  //   })
 
-    // destination.actions.trackEvent.perform = jest.fn()
-    jest.spyOn(destination.actions.trackEvent, 'perform')
-    await trackEvent.load(Context.system(), {} as Analytics)
+  //   // await new Promise((r) => setTimeout(r, 3000))
+  //   // console.log('initial load', window.Sprig.visitorId)
 
-    await trackEvent.track?.(
-      new Context({
-        type: 'track',
-        name: 'Button Clicked 4',
-        anonymousId: 'anonymous-id-2'
-      })
-    )
+  //   console.log(x)
+  //   const [identifyUser, signoutUser, trackEvent, _updateUserId] = x
 
-    await new Promise((r) => setTimeout(r, 5000))
+  //   await signoutUser.load(Context.system(), {} as Analytics)
+  //   await signoutUser.track?.(
+  //     new Context({
+  //       type: 'track',
+  //       event: 'Signed Out'
+  //     })
+  //   )
 
-    console.log(window.Sprig.partnerAnonymousId)
-    console.log(window.Sprig.visitorId)
-    console.log(window.Sprig)
+  //   await new Promise((r) => setTimeout(r, 3000))
+  //   console.log('after signout 1', window.Sprig.visitorId)
+  //   console.log('after signout 1', window.Sprig.logs)
 
-    expect(destination.actions.trackEvent.perform).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        payload: { name: 'Button Clicked 4', anonymousId: 'anonymous-id-2' }
-      })
-    )
-  }, 15000)
+  //   await signoutUser.track?.(
+  //     new Context({
+  //       type: 'track',
+  //       event: 'Signed Out'
+  //     })
+  //   )
+
+  //   await new Promise((r) => setTimeout(r, 3000))
+  //   console.log('after signout 2', window.Sprig.visitorId)
+  //   console.log('after signout 2', window.Sprig.logs)
+
+  //   await trackEvent.load(Context.system(), {} as Analytics)
+  //   await new Promise((r) => setTimeout(r, 1000))
+
+  //   const visitorId = window.Sprig.visitorId
+  //   expect(visitorId).toBeTruthy()
+
+  //   await trackEvent.track?.(
+  //     new Context({
+  //       type: 'track',
+  //       name: 'Button Clicked Event',
+  //       event: 'Button Clicked Event',
+  //       anonymousId
+  //     })
+  //   )
+  //   // new anonymous ID updates visitor id
+
+  //   await new Promise((r) => setTimeout(r, 3000))
+  //   console.log(window.Sprig.visitorId)
+  //   console.log('after track', window.Sprig.logs)
+
+  //   await identifyUser.identify?.(
+  //     new Context({
+  //       type: 'identify',
+  //       anonymousId,
+  //       userId: userId0,
+  //       traits: {
+  //         email: 'test-email-1@gmail.com',
+
+  //       }
+  //     })
+  //   )
+
+  //   await new Promise((r) => setTimeout(r, 3000))
+
+  //   console.log(window.Sprig.visitorId, window.Sprig.userId)
+  //   expect(window.Sprig.userId).toEqual(userId0)
+  // }, 30000)
 })

@@ -23,7 +23,7 @@ const subscriptions: Subscription[] = [
 ]
 
 describe('identifyUser', () => {
-  test('it maps event parameters correctly to identify function ', async () => {
+  test('it mapqs event parameters correctly to identify function ', async () => {
     const [identifyEvent] = await sprigWebDestination({
       envId: 'testEnvId',
       subscriptions
