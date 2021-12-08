@@ -10,7 +10,6 @@ const action: BrowserActionDefinition<Settings, Sprig, Payload> = {
   defaultSubscription: 'type = "track" and event = "Signed Out"',
   fields: {},
   perform: (Sprig, _event) => {
-    console.log('starting signout perform')
     Sprig('logoutUser')
   }
 }
