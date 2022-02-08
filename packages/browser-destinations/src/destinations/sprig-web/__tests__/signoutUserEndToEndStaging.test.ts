@@ -4,7 +4,8 @@ import { identifyUserMock, signoutUserMock, trackEventMock } from '../testHelper
 
 describe('signoutUser: e2e test against staging (can see events, visitors, attributes on iOS test account)', () => {
   test('it handles user sign out and tracks event', async () => {
-    const anonymousId = `anonymous-id-${Math.floor(Math.random() * 1000000000)}`
+    const anonymousId0 = `anonymous-id-0-${Math.floor(Math.random() * 1000000000)}`
+    const anonymousId1 = `anonymous-id-1-${Math.floor(Math.random() * 1000000000)}`
     const userId = `logged-out-before-events-${Math.floor(Math.random() * 1000000000)}`
     const [identifyUser, signoutUser, trackEvent] = await sprigWebDestination({
       envId: 'RpOLQFy3T', // Staging iOS Test Account
@@ -15,14 +16,14 @@ describe('signoutUser: e2e test against staging (can see events, visitors, attri
     await identifyUser.identify?.(
       new Context({
         type: 'identify',
-        anonymousId,
+        anonymousId: anonymousId0,
         userId
       })
     )
 
     await new Promise((r) => setTimeout(r, 1000))
     const initialVisitorId = window.Sprig.visitorId
-    expect(window.Sprig.partnerAnonymousId).toEqual(anonymousId)
+    expect(window.Sprig.partnerAnonymousId).toEqual(anonymousId0)
     expect(window.Sprig.userId).toEqual(userId)
 
     await signoutUser.track?.(
@@ -37,7 +38,7 @@ describe('signoutUser: e2e test against staging (can see events, visitors, attri
         type: 'track',
         name: 'Button Clicked Anonymously Event',
         event: 'Button Clicked Anonymously Event',
-        anonymousId
+        anonymousId1
       })
     )
 

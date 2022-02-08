@@ -37,14 +37,6 @@ describe('identifyUser test with mocked requests', () => {
 
     nock('https://api-staging.sprig.com', {
       reqheaders: {
-        'x-ul-user-id': userId
-      }
-    })
-      .put(/\/sdk\/1\/environments\/testEnvId\/visitors\/[\w-]*$/, { userId: userId })
-      .reply(204, '', ['Access-Control-Allow-Origin', '*'])
-
-    nock('https://api-staging.sprig.com', {
-      reqheaders: {
         'x-ul-user-id': userId,
         'x-ul-anonymous-id': anonymousId
       }
